@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+  php_apache:
+    container_name: php_8.2_apache_container
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "3000:80"
+    volumes:
+      - "./:/var/www/html"
+    networks:
+      - guviwebdev_network
+    depends_on:
+      - mysql
+      - mongodb
+
+  mysql:
+    image: mysql:8.1.0
+    container_name: mysql_8.1.0_container
+    env_file:
+      - .env
+    ports:
+      - "3306:3306"
+    networks:
+      - guviwebdev_network
+
+  redis:
+    image: redis:7.2.1
+    container_name: redis_7.2.1_container
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - guviwebdev_network
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_container
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+    ports:
+      - "27017:27017"
+    networks:
+      - guviwebdev_network
+
+  phpmyadmin:
+    image: phpmyadmin:5.2.1
+    container_name: phpmyadmin_container
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_HOST=mysql
+      - PMA_PORT=3306
+    networks:
+      - guviwebdev_network
+
+networks:
+  guviwebdev_network:
