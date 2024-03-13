@@ -26,6 +26,9 @@ RUN echo "extension=mongodb.so" >> /usr/local/etc/php/conf.d/mongodb.ini
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+COPY ./composer.json ./
+RUN composer update --ignore-platform-req=ext-mongodb
+
 # Enable Apache modules
 RUN a2enmod rewrite
 
