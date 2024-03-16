@@ -12,11 +12,13 @@ services:
       - "3000:80"
     volumes:
       - "./:/var/www/html"
+      - "./vendor:/var/www/html/vendor"
     networks:
       - guviwebdev_network
     depends_on:
       - mysql
       - mongodb
+      - redis
 
   mysql:
     image: mysql:8.1.0
@@ -25,15 +27,20 @@ services:
       - .env
     ports:
       - "3306:3306"
+    volumes:
+      - "./mysql:/var/lib/mysql"
     networks:
       - guviwebdev_network
 
   redis:
-    image: redis:7.2.1
-    container_name: redis_7.2.1_container
+    image: redis:latest
+    command: [ "redis-server", "--bind", "redis", "--port", "6379" ]
+    container_name: redis_container
     restart: always
     ports:
       - "6379:6379"
+    volumes:
+      - ./redis:/data
     networks:
       - guviwebdev_network
 
@@ -42,11 +49,13 @@ services:
     container_name: mongodb_container
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
-      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     ports:
       - "27017:27017"
+    volumes:
+      - "./mongo:/data/db"
     networks:
       - guviwebdev_network
 

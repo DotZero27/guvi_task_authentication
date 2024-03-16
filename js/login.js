@@ -15,7 +15,6 @@ $(document).ready(function () {
             data: formData,
             dataType: 'json',
             success: function (response) {
-                console.log(response)
                 // Check response
                 if (response.success) {
                     // Authentication successful

@@ -13,19 +13,37 @@
 </head>
 
 <body>
-    <main class="p-3 container-sm">
-        <h2 class="fw-bold">Login</h2>
-        <div class="d-flex flex-column">
-            <div class="input-group mb-3">
-                <input type="text" class="form-control" id="username" name="username" placeholder="Username">
+    <main class="form-layout mt-5">
+        <div class="card">
+            <div class="card-header fw-bold fs-3">Login</div>
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control bg-light-subtle" id="username" name="username"
+                        placeholder="enter username">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control bg-light-subtle" id="password" name="password"
+                        placeholder="enter password">
+                </div>
+
+                <button id="loginForm" type="submit" class="my-2 btn btn-dark fw-medium w-100">Continue</button>
+
+
+                <div id="message" class="text-danger"></div>
+
             </div>
-            <div class="input-group mb-3">
-                <input type="password" class="form-control" id="password" name="password" placeholder="Password">
-            </div>
-            <div>
-                <button id="loginForm" type="submit" class="btn btn-primary btn-sm">Submit</button>
-            </div>
-            <div id="message"></div>
+        </div>
+
+
+        <div class="mt-4 text-center">
+            Don't have an account?
+            <a href="/register"
+                class="p-lg-1 link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">
+                Register
+            </a>
         </div>
     </main>
 

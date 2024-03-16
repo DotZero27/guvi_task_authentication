@@ -1,10 +1,19 @@
 <?php
+
 require '../vendor/autoload.php';
 
-$MONGO_USERNAME = getenv('MONGODB_USERNAME');
-$MONGO_PASSWORD = getenv('MONGODB_ROOT_PASSWORD');
-$MONGO_HOST = getenv('MONGODB_HOST');
-$MONGO_DATABASE = getenv('MONGODB_DATABASE');
+use Predis\Client;
+use MongoDB;
+
+// Create a new instance of the Predis Client pointing to your Redis server
+$client = new Client([
+    'host'   => getenv('REDIS_HOST'),
+]);
+
+$MONGO_USERNAME = getenv('MONGO_USERNAME');
+$MONGO_PASSWORD = getenv('MONGO_ROOT_PASSWORD');
+$MONGO_HOST = getenv('MONGO_HOST');
+$MONGO_DATABASE = getenv('MONGO_DATABASE');
 
 $connectionString = sprintf(
     "mongodb://%s:%s@%s:27017/%s?authSource=admin",
@@ -24,9 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /index.html', 301);
     die();
 }
-
-
-
 
 try {
     $mongoClient = new MongoDB\Client($connectionString);
@@ -50,7 +56,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
     $password = $_POST['password'];
 
     echo json_encode(array("success" => "User authenticated successfully."));
-    return;
+    exit();
 
     // Prepare SQL statement
     $stmt = $sqlconn->prepare("SELECT id FROM users WHERE username = ? AND password = ?");
