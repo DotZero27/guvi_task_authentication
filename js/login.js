@@ -1,10 +1,31 @@
+const USER_STORAGE_KEY = 'session_id'
+
+
+function checkUser() {
+
+    const user = localStorage.getItem(USER_STORAGE_KEY);
+
+    if (user) {
+        window.location.href = '/profile'
+    }
+}
+
+checkUser()
+
+
 $(document).ready(function () {
+    $(window).on('pageshow', function (event) {
+        if (event.originalEvent.persisted) {
+            checkUser();
+        }
+    });
+
     $('#loginForm').click(function (e) {
         e.preventDefault(); // Prevent form submission
 
         // Get form data
         const formData = {
-            'username': $('#username').val(),
+            'email': $('#email').val(),
             'password': $('#password').val()
         };
 
@@ -18,10 +39,10 @@ $(document).ready(function () {
                 // Check response
                 if (response.success) {
                     // Authentication successful
-                    localStorage.setItem('loggedIn', true);
-                    alert(response.success);
-                    // Redirect to dashboard or desired page
-                    window.location.href = 'profile.html';
+                    const { session_id } = response
+                    localStorage.setItem(USER_STORAGE_KEY, session_id);
+                    window.location.href = '/profile';
+
                 } else {
                     console.log('Authentication failed')
                     // Authentication failed

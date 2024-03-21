@@ -1,33 +1,16 @@
 <?php
-
 require '../vendor/autoload.php';
 
-use Predis\Client;
-use MongoDB;
+use Predis\Client as RedisClient;
+use MongoDB\Client as MongoClient;
 
-// Create a new instance of the Predis Client pointing to your Redis server
-$client = new Client([
-    'host'   => getenv('REDIS_HOST'),
-]);
-
-$MONGO_USERNAME = getenv('MONGO_USERNAME');
-$MONGO_PASSWORD = getenv('MONGO_ROOT_PASSWORD');
-$MONGO_HOST = getenv('MONGO_HOST');
-$MONGO_DATABASE = getenv('MONGO_DATABASE');
-
-$connectionString = sprintf(
+$mongoConnectionString = sprintf(
     "mongodb://%s:%s@%s:27017/%s?authSource=admin",
-    $MONGO_USERNAME,
-    $MONGO_PASSWORD,
-    $MONGO_HOST,
-    $MONGO_DATABASE
+    getenv('MONGO_USERNAME'),
+    getenv('MONGO_ROOT_PASSWORD'),
+    getenv('MONGO_HOST'),
+    getenv('MONGO_DATABASE'),
 );
-
-// Database connection parameters
-$MYSQL_SERVER = getenv('MYSQL_SERVER');
-$MYSQL_USERNAME = getenv('MYSQL_USERNAME');
-$MYSQL_PASSWORD = getenv('MYSQL_ROOT_PASSWORD');
-$MYSQL_DATABASE = getenv('MYSQL_DATABASE');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /index.html', 301);
@@ -35,47 +18,101 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    $mongoClient = new MongoDB\Client($connectionString);
-} catch (Exception $e) {
-    die("Failed to connect to MongoDB: " . $e->getMessage());
+    $redis = new RedisClient([
+        'host'   => getenv('REDIS_HOST'),
+    ]);
+
+    $mongo = new MongoClient($mongoConnectionString);
+} catch (\Exception $e) {
+    throw new \Exception('Failed to connect to DB: ' . $e->getMessage());
 }
 
-// Create connection
-$sqlconn = new mysqli($MYSQL_SERVER, $MYSQL_USERNAME, $MYSQL_PASSWORD, $MYSQL_DATABASE);
+// Database connection parameters
+$MYSQL_SERVER = getenv('MYSQL_SERVER');
+$MYSQL_USERNAME = getenv('MYSQL_USERNAME');
+$MYSQL_PASSWORD = getenv('MYSQL_ROOT_PASSWORD');
+$MYSQL_DATABASE = getenv('MYSQL_DATABASE');
 
+try {
+    // Check if the login form is submitted via AJAX
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
-// Check connection
-if ($sqlconn->connect_error) {
-    die("Connection failed: " . $sqlconn->connect_error);
-}
+        // Create connection
+        $sqlconn = new mysqli($MYSQL_SERVER, $MYSQL_USERNAME, $MYSQL_PASSWORD, $MYSQL_DATABASE);
 
-// Check if the login form is submitted via AJAX
-if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
-    // Retrieve form data sent via AJAX
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+        // Check connection
+        if ($sqlconn->connect_error) {
+            throw new Exception("Connection failed: " . $sqlconn->connect_error);
+        }
 
-    echo json_encode(array("success" => "User authenticated successfully."));
-    exit();
+        // Retrieve form data sent via AJAX
+        $email = $_POST['email'];
+        $password = $_POST['password'];
 
-    // Prepare SQL statement
-    $stmt = $sqlconn->prepare("SELECT id FROM users WHERE username = ? AND password = ?");
-    $stmt->bind_param("ss", $username, $password);
-    $stmt->execute();
-    $stmt->store_result();
+        if ($email == "" || $password == "") {
+            echo json_encode(array("error" => "Fill all the fields"));
+            exit();
+        }
 
-    // Check if user exists in the database
-    if ($stmt->num_rows > 0) {
-        // User authenticated successfully
-        echo json_encode(array("success" => "User authenticated successfully."));
+        // Prepare and execute SELECT statement
+        $stmt = $sqlconn->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+
+        // Get the result set
+        $result = $stmt->get_result();
+
+        // Check if user exists in the database
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $hashed_password = $row['password'];
+
+            if (password_verify($password, $hashed_password)) {
+
+                unset($row['password']);
+
+                $session_id = uniqid('session:');
+
+                $collection = $mongo->selectCollection(getenv('MONGO_DATABASE'), 'users');
+
+                // Execute the search
+                $profile = $collection->findOne([
+                    'userId' => strval($row['id'])
+                ]);
+
+                // Check if a document was found
+                if ($profile) {
+                    unset($profile['userId'], $profile['_id']);
+                }
+
+                $redis->set($session_id, json_encode(['user' => $row, 'profile' => $profile]));
+
+                $redis->expireAt($session_id, strtotime('+5 minutes'));
+
+                // Send User Result
+                echo json_encode(array(
+                    "success" => true,
+                    "session_id" => $session_id
+                ));
+            } else {
+                // Passwords don't match
+                echo json_encode(array("error" => "Invalid email or password"));
+            }
+        } else {
+            //User not found
+            echo json_encode(array("error" => "Invalid email or password"));
+        }
+
+        // Close statement
+        $stmt->close();
     } else {
-        // Authentication failed
-        echo json_encode(array("error" => "Invalid username or password."));
+        // Handle non-AJAX requests (optional)
     }
+} catch (Exception $e) {
+    echo json_encode(array("error" => $e->getMessage()));
+}
 
-    // Close statement and connection
-    $stmt->close();
+// Close connection
+if (isset($sqlconn)) {
     $sqlconn->close();
-} else {
-    // Handle non-AJAX requests (optional)
 }
