@@ -1,9 +1,4 @@
 <?php
-require '../vendor/autoload.php';
-
-use Predis\Client as RedisClient;
-
-// Database connection parameters
 $MYSQL_SERVER = getenv('MYSQL_SERVER');
 $MYSQL_USERNAME = getenv('MYSQL_USERNAME');
 $MYSQL_PASSWORD = getenv('MYSQL_ROOT_PASSWORD');
@@ -18,23 +13,12 @@ try {
     // Check if the login form is submitted via AJAX
     if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
-        try {
-            $redis = new RedisClient([
-                'host'   => getenv('REDIS_HOST'),
-            ]);
-        
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to connect to DB: ' . $e->getMessage());
-        }
-
-        // Create connection
         $sqlconn = new mysqli($MYSQL_SERVER, $MYSQL_USERNAME, $MYSQL_PASSWORD, $MYSQL_DATABASE);
 
-        // Check connection
         if ($sqlconn->connect_error) {
             throw new Exception("Connection failed: " . $sqlconn->connect_error);
         }
-        // Retrieve form data sent via AJAX
+
         $email = $_POST['email'];
         $password = $_POST['password'];
         $confirm_password = $_POST['confirm_password'];
@@ -92,15 +76,8 @@ try {
         if ($result->num_rows > 0) {
             $row = $result->fetch_assoc();
 
-            $session_id = uniqid('session:');
-
-            $redis->set($session_id, json_encode(['user' => $row]));
-            $redis->expireAt($session_id, strtotime('+5 minutes'));
-
-            // Return the session ID
             echo json_encode(array(
                 "success" => true,
-                "session_id" => $session_id
             ));
 
         } else {
@@ -108,11 +85,11 @@ try {
             echo json_encode(array("error" => "Failed to authenticate"));
         }
 
-        // Close statement
         $stmt->close();
         $user->close();
     } else {
         // Handle non-AJAX requests (optional)
+        echo json_encode(array("error" => "Failed to authenticate"));
     }
 } catch (Exception $e) {
     echo json_encode(array("error" => $e->getMessage()));
