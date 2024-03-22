@@ -1,4 +1,5 @@
 const USER_STORAGE_KEY = 'session_id'
+const activeFields = {};
 
 function getLocalSessionId() {
 
@@ -83,7 +84,6 @@ function removeSpaces(inputType, value) {
     return false;
 }
 
-
 function createAccountField(options) {
     const {
         containerId,
@@ -111,20 +111,46 @@ function createAccountField(options) {
     const cancelBtn = $("<button>").addClass("btn btn-sm btn-outline-dark").attr("id", cancelBtnId).text('Cancel').css("display", "none");
     const submitBtn = $("<button>").addClass("btn btn-sm btn-success").attr("id", submitBtnId).text('Submit').css("display", "none");
 
+    function handleKeyPress(event) {
+        if (event.which === 13 && !inputElement.prop('disabled')) {
+            $('#' + fieldId).closest('.d-flex').find('.btn-success').click();
+        }
+    }
+
     function editMode() {
+        for (const activeFieldId in activeFields) {
+            $(`#${activeFields[activeFieldId]}-cancel-btn`).hide();
+            $(`#${activeFields[activeFieldId]}-submit-btn`).hide();
+            $(`#${activeFields[activeFieldId]}-edit-btn`).show();
+            $(`#${activeFields[activeFieldId]}`).prop('disabled', true);
+        }
+        
         editBtn.hide();
         inputElement.prop('disabled', false);
         cancelBtn.show();
         submitBtn.show();
+
+        activeFields[fieldId] = fieldId;
     }
 
     function reset(updatedValue) {
+        for (const activeFieldId in activeFields) {
+            $(`#${activeFields[activeFieldId]}-edit-btn`).show();
+            $(`#${activeFields[activeFieldId]}-submit-btn`).hide();
+            $(`#${activeFields[activeFieldId]}-cancel-btn`).hide();
+            $(`#${activeFields[activeFieldId]}`).prop('disabled', true);
+        }
+
+
         cancelBtn.hide();
         submitBtn.hide();
         editBtn.show();
         inputElement.prop('disabled', true);
         setInputValue(inputElement, updatedValue || value);
+
+        delete activeFields[fieldId];
     }
+
 
     editBtn.click(function () {
         editMode();
@@ -172,6 +198,8 @@ function createAccountField(options) {
             }
         });
     });
+
+    $(window).keypress(handleKeyPress);
 
     containerDiv.append(labelText);
 
