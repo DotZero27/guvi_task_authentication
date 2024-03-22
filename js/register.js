@@ -9,16 +9,14 @@ if (user) {
 $(document).ready(function () {
 
     $('#registerForm').click(function (e) {
-        e.preventDefault(); // Prevent form submission
+        e.preventDefault();
 
-        // Get form data
         const formData = {
             'email': $('#email').val(),
             'password': $('#password').val(),
             'confirm_password': $('#confirm_password').val()
         };
 
-        // Send AJAX request
         $.ajax({
             type: 'POST',
             url: '/php/register.php',
@@ -34,13 +32,11 @@ $(document).ready(function () {
                     }, 1000);
 
                 } else {
-                    // Authentication failed
                     console.log('Authentication failed')
                     let errorMessage = response.error
 
                     if (response?.passwordWeak) {
                         $('#pwRequirements').show()
-
                     }
 
                     if (response?.missing_fields) {

@@ -106,7 +106,8 @@ try {
         // Close statement
         $stmt->close();
     } else {
-        // Handle non-AJAX requests (optional)
+        // Handle non-AJAX requests
+        echo json_encode(array("error" => "Failed to authenticate"));
     }
 } catch (Exception $e) {
     echo json_encode(array("error" => $e->getMessage()));

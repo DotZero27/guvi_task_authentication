@@ -44,7 +44,7 @@ function sessionInvalidLogout() {
 function setInputValue(inputElement, value) {
     if (value === "" || value === 'Not Set') {
         inputElement.attr('placeholder', 'Not Set');
-        inputElement.val(''); // Clear input value
+        inputElement.val('');
     } else {
         inputElement.val(value);
     }
@@ -73,7 +73,6 @@ function validateTelephoneNumber(inputType, value) {
 }
 
 function removeSpaces(inputType, value) {
-    // Remove all spaces from the value using jQuery
     const newValue = $.trim(value).replace(/\s+/g, '');
 
     if (newValue.length > 0) {
