@@ -14,14 +14,24 @@ $mongoConnectionString = sprintf(
 
 $headers = getallheaders();
 
-if (!array_key_exists('Authorization', $headers)) {
+function normalizeHeaders($headers) {
+    $normalizedHeaders = array();
+    foreach ($headers as $key => $value) {
+        $normalizedHeaders[strtolower($key)] = $value;
+    }
+    return $normalizedHeaders;
+}
+
+$normalizedHeaders = normalizeHeaders($headers);
+
+if (!array_key_exists('authorization', $normalizedHeaders)) {
     http_response_code(401);
     echo json_encode(["error" => "Authorization header is missing"]);
     exit();
 }
 
 // Extract the token from the header
-list($token_type, $token) = explode(" ", $headers['Authorization'], 2);
+list($token_type, $token) = explode(" ", $normalizedHeaders['authorization'], 2);
 
 // Check if the token type is Bearer
 if ($token_type !== 'Bearer') {
