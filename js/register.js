@@ -7,6 +7,7 @@ if (user) {
 }
 
 $(document).ready(function () {
+
     $('#registerForm').click(function (e) {
         e.preventDefault(); // Prevent form submission
 
@@ -26,21 +27,22 @@ $(document).ready(function () {
             success: function (response) {
                 // Check response
                 if (response.success) {
-                    const { session_id } = response
+                    $('#registerSuccess').toast('show');
 
-                    localStorage.setItem(USER_STORAGE_KEY, session_id);
-                    window.location.href = '/profile';
+                    setTimeout(function () {
+                        window.location.href = '/login';
+                    }, 1000);
 
                 } else {
                     // Authentication failed
                     console.log('Authentication failed')
                     let errorMessage = response.error
 
-                    if(response?.passwordWeak){
+                    if (response?.passwordWeak) {
                         $('#pwRequirements').show()
 
                     }
-                    
+
                     if (response?.missing_fields) {
                         errorMessage += ` (${response.missing_fields.join(', ')})`;
                     }
