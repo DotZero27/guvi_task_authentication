@@ -76,6 +76,17 @@
 
 
     <div class="toast-container position-fixed top-0 end-0 p-3">
+        
+        <div id="invalidInput" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-warning">
+                <strong class="me-auto">Warning</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                Invalid Input (Can't be empty).
+            </div>
+        </div>
+
         <div id="invalidPhone" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-warning">
                 <strong class="me-auto">Warning</strong>
@@ -85,9 +96,7 @@
                 Invalid Phone Number.
             </div>
         </div>
-    </div>
 
-    <div class="toast-container position-fixed top-0 end-0 p-3">
         <div id="sessionInvalid" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header bg-warning">
                 <strong class="me-auto">Notice</strong>
@@ -97,6 +106,18 @@
                 Session Invalid.
             </div>
         </div>
+
+        <div id="updateSuccess" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white fw-light">
+                <strong class="me-auto">Updated Successfully</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" data-bs-theme="dark"
+                    aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                Data updated & saved!
+            </div>
+        </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"

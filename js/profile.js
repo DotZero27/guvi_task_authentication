@@ -32,7 +32,7 @@ function updateSessionExpirationTime(timeInSeconds) {
     $('#sessionTimer').text(`${minutes} minutes ${seconds} seconds`);
 }
 
-function sessionInvalidLogout(){
+function sessionInvalidLogout() {
     $('#sessionInvalid').toast('show');
 
     setTimeout(function () {
@@ -49,35 +49,59 @@ function setInputValue(inputElement, value) {
     }
 }
 
+function formatDateForInput(inputType, value) {
+    if (inputType === "date") {
+        const dateParts = value.split('/');
+        if (dateParts.length === 3) {
+            return `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+        }
+    }
+    return value;
+}
+
+function validateTelephoneNumber(inputType, value) {
+    const pattern = /^(?:\+91)?[6789]\d{9}$/;
+
+    if (inputType !== "tel" || !pattern.test(value)) {
+        console.error('Invalid phone number format');
+        $('#invalidPhone').toast('show');
+        return false;
+    }
+
+    return value;
+}
+
+function removeSpaces(inputType, value) {
+    // Remove all spaces from the value using jQuery
+    const newValue = $.trim(value).replace(/\s+/g, '');
+
+    if (newValue.length > 0) {
+        return newValue;
+    }
+
+    $('#invalidInput').toast('show');
+    return false;
+}
+
 
 function createAccountField(options) {
-
     const {
         containerId,
         fieldId,
         value = 'Not Set',
         label = fieldId,
         inputType = "text",
-        editable = true
+        editable = true,
+        inputValidate = null,
+        submitValidate = null
     } = options;
 
     const userContainer = $(containerId);
     const labelText = $('<h5>').text(label);
-
     const containerDiv = $('<div>').addClass("mb-4").attr("id", `${fieldId}-container`);
-
     const inputElement = $("<input>").addClass("form-control form-control-sm").attr("id", fieldId).attr("type", inputType).prop('disabled', true);
 
-    if (inputType === "date") {
-        // Format the date to YYYY-MM-DD for compatibility
-        const dateParts = value.split('/');
-        if (dateParts.length === 3) {
-            const formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
-            inputElement.val(formattedDate);
-        }
-    }
-
-    setInputValue(inputElement, value);
+    setInputValue(inputElement, inputValidate ? inputValidate(inputType, value) : value);
 
     const editBtnId = `${fieldId}-edit-btn`;
     const cancelBtnId = `${fieldId}-cancel-btn`;
@@ -94,12 +118,12 @@ function createAccountField(options) {
         submitBtn.show();
     }
 
-    function reset() {
+    function reset(updatedValue) {
         cancelBtn.hide();
         submitBtn.hide();
         editBtn.show();
         inputElement.prop('disabled', true);
-        setInputValue(inputElement, value);
+        setInputValue(inputElement, updatedValue || value);
     }
 
     editBtn.click(function () {
@@ -111,21 +135,17 @@ function createAccountField(options) {
     });
 
     submitBtn.click(function () {
-        const sessionId = getLocalSessionId()
+        let updatedValue = inputElement.val();
 
-        // Get updated value
-        const updatedValue = inputElement.val();
-
-
-        if (inputType === "tel") {
-            const pattern = /^(?:\+91)?[6789]\d{9}$/;
-            if (!pattern.test(updatedValue)) {
-                console.error('Invalid phone number format');
-
-                $('#invalidPhone').toast('show');
+        if (submitValidate) {
+            const validatedValue = submitValidate(inputType, updatedValue);
+            if (!validatedValue) {
                 return;
             }
+            updatedValue = validatedValue;
         }
+
+        const sessionId = getLocalSessionId();
 
         $.ajax({
             url: '/php/profile.php',
@@ -138,16 +158,17 @@ function createAccountField(options) {
                 value: updatedValue
             },
             success: function (response) {
-                window.location.href = '/profile';
+                $('#updateSuccess').toast('show');
+                reset(updatedValue);
             },
             error: function (xhr) {
                 console.error('Error updating data:', error);
 
                 if (xhr.status === 401) {
-                    sessionInvalidLogout()
+                    sessionInvalidLogout();
                 }
 
-                reset()
+                reset();
             }
         });
     });
@@ -155,7 +176,6 @@ function createAccountField(options) {
     containerDiv.append(labelText);
 
     const detailDiv = $('<div>').addClass("d-flex gap-2");
-
     detailDiv.append(inputElement);
 
     if (editable) {
@@ -163,12 +183,11 @@ function createAccountField(options) {
     }
 
     containerDiv.append(detailDiv);
-
     userContainer.append(containerDiv);
 }
 
 
-function fetchUserProfile(){
+function fetchUserProfile() {
     const sessionId = getLocalSessionId()
 
     $.ajax({
@@ -179,12 +198,12 @@ function fetchUserProfile(){
         url: '/php/profile.php',
         dataType: 'json',
         success: (response) => {
-            const { user, profile  } = response?.data;
+            const { user, profile } = response?.data;
 
             let expiration_time = response.expiration_time
 
             updateSessionExpirationTime(expiration_time);
-            
+
             let expirationTimer = setInterval(() => {
                 expiration_time--;
                 updateSessionExpirationTime(expiration_time);
@@ -210,6 +229,7 @@ function fetchUserProfile(){
                 fieldId: 'firstName',
                 value: profile?.firstName,
                 label: "First Name",
+                submitValidate: removeSpaces
             });
 
             createAccountField({
@@ -217,6 +237,7 @@ function fetchUserProfile(){
                 fieldId: 'lastName',
                 value: profile?.lastName,
                 label: "Last Name",
+                submitValidate: removeSpaces
             });
 
             createAccountField({
@@ -224,7 +245,15 @@ function fetchUserProfile(){
                 fieldId: 'dob',
                 value: profile?.dob,
                 label: "Date of Birth",
-                inputType: "date"
+                inputType: "date",
+                inputValidate: formatDateForInput
+            });
+
+            createAccountField({
+                containerId: profile_container,
+                fieldId: 'address',
+                value: profile?.address,
+                label: "Address",
             });
 
             createAccountField({
@@ -232,8 +261,11 @@ function fetchUserProfile(){
                 fieldId: 'contact',
                 value: profile?.contact,
                 label: "Contact (Indian Phone Number only)",
-                inputType: "tel"
+                inputType: "tel",
+                submitValidate: validateTelephoneNumber
             });
+
+
         },
         error: (xhr) => {
             // Handle AJAX error
