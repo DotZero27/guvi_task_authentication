@@ -138,7 +138,7 @@ function createAccountField(options) {
                 value: updatedValue
             },
             success: function (response) {
-                reset()
+                window.location.href = '/profile';
             },
             error: function (xhr) {
                 console.error('Error updating data:', error);
